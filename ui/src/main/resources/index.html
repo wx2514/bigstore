@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bigstore-UI</title>
+    <script type="text/javascript" language="javascript" src="/jquery.min.js"></script>
+    <script type="text/javascript" language="javascript" src="/bootstrap.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/bootstrap.min.css">
+</head>
+<body>
+    <div class="col-xs-offset-1">数据库列表</div>
+    <div class="col-xs-offset-1" id="database"></div>
+    <div class="col-xs-offset-1">已经使用的数据库 <span id="usedDatabase"></span></div>
+    <p></p>
+    <div class="col-xs-offset-1">SQL</div>
+    <div class="col-xs-offset-1">
+        <textarea id="sql" rows="5" style="width: 80%;"></textarea>
+    </div>
+<button class="col-xs-offset-1" onclick="query()">查询</button>
+    <div class="col-xs-offset-1">total:<label id="totalCount"></label></div>
+    <div class="col-xs-offset-1">
+        <span id="result"></span>
+        <table border="1" id="resTable">
+
+        </table>
+
+    </div>
+
+</body>
+    <script>
+
+        function query() {
+            var sql = $("#sql").val();
+            if (!sql) {
+                alert("sql 不能为空");
+                return;
+            }
+            var database = $('#usedDatabase').html();
+            if (!database) {
+                alert("请先选择数据库");
+                return;
+            }
+            $.ajax({
+                url:"/query.do",
+                type: "POST",
+                dataType: "json",
+                data:{"sql": sql},
+                success:function(result){
+                    if (result.success) {
+                        var total = result.total;
+                        var lines = result.value;
+                        var html = '';
+                        for (var i = 0; i < lines.length; i++) {
+                            html += '<tr>';
+                            var ln = lines[i];
+                            for (var ii = 0; ii < ln.length; ii++) {
+                                html += '<td>' + ln[ii] + '</td>';
+                            }
+                            html += '</tr>';
+                        }
+                        //$('#result').html(html);
+                        $('#resTable').html(html);
+                        $('#result').html('');
+                        $('#totalCount').html(total);
+                    } else {
+                        $('#resTable').html('');
+                        $('#result').html(result.error);
+                    }
+                }});
+        }
+
+        function useDatabase(database) {
+            $.ajax({
+                url:"/useDatabase.do",
+                type: "POST",
+                dataType: "json",
+                data:{"database": database},
+                success:function(result){
+                    if (result.success) {
+                        $("#usedDatabase").html(result.value);
+                    }
+                }});
+        }
+
+        $(document).ready(function(){
+            //alert("ready");
+        });
+
+        $.ajax({
+            url:"/getDatabase.do",
+            success:function(result){
+                if (result.success) {
+                    var v = result.value;
+                    var flag = '';
+                    var html = '';
+                    for (var i = 0; i < v.length; i++) {
+                        html += flag + '<a href="javascript:useDatabase(\'' + v[i] + '\')">' + v[i] + '</a>'
+                        flag = ', ';
+                    }
+                    $("#database").html(html);
+                }
+            }});
+
+
+    </script>
+</html>
