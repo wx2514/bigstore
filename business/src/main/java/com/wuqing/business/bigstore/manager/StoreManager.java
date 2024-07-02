@@ -429,11 +429,11 @@ public class StoreManager {
                     }
                     byte[] descData = GZipUtil.readTxt2Byte(desc);
                     //long ss = System.currentTimeMillis();
-                    ResponseData response = SlaveClient.getSlaveClient().syncData(data, bytes);
+                    ResponseData response = SlaveClient.getSlaveClient().syncData(data.substring(Params.getBaseDir().length()), bytes);
                     if (response == null  || !response.isSuccess()) {
                         res = false;
                     }
-                    response = SlaveClient.getSlaveClient().syncData(desc, descData);
+                    response = SlaveClient.getSlaveClient().syncData(desc.substring(Params.getBaseDir().length()), descData);
                     if (response == null  || !response.isSuccess()) {
                         res = false;
                     }
@@ -627,11 +627,11 @@ public class StoreManager {
                     }
                     byte[] descData = GZipUtil.readTxt2Byte(desc);
                     //long ss = System.currentTimeMillis();
-                    ResponseData response = SlaveClient.getSlaveClient().syncData(data, bytes);
+                    ResponseData response = SlaveClient.getSlaveClient().syncData(data.substring(Params.getBaseDir().length()), bytes);
                     if (response == null  || !response.isSuccess()) {
                         res = false;
                     }
-                    response = SlaveClient.getSlaveClient().syncData(desc, descData);
+                    response = SlaveClient.getSlaveClient().syncData(desc.substring(Params.getBaseDir().length()), descData);
                     if (response == null  || !response.isSuccess()) {
                         res = false;
                     }

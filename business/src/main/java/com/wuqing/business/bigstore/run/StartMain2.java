@@ -1,6 +1,7 @@
 package com.wuqing.business.bigstore.run;
 
 import com.wuqing.business.bigstore.cache.DataCache;
+import com.wuqing.business.bigstore.config.Params;
 import com.wuqing.business.bigstore.tcp.server.TcpServer;
 import com.wuqing.business.bigstore.thread.CleanRunnable;
 import com.wuqing.business.bigstore.thread.CompressRunnable;

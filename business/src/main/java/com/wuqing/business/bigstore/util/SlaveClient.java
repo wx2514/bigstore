@@ -19,7 +19,7 @@ public class SlaveClient {
 
     private static Random random = new Random();
 
-    private static int size = 3;
+    private static int size = 1;
 
     private static boolean existClient = false;
 
@@ -29,7 +29,7 @@ public class SlaveClient {
             if (Params.getSlaveIp() != null) {
                 //开启多个通道
                 for (int i = 0; i < size; i++) {
-                    clientList.add(new BigstoreClient(Params.getSlaveIp(), Constants.PORT, "", 5000));
+                    clientList.add(new BigstoreClient(Params.getSlaveIp(), Params.getSlavePort(), "", 5000));
                 }
                 existClient = true;
             }

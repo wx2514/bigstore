@@ -20,6 +20,8 @@ public class Params {
 
     private static final Logger logger = LoggerFactory.getLogger(Params.class);
 
+    public static String PARAMS_PROPERTIES_PATH = "/params.properties";
+
     private static final Params PARAMS = new Params();
 
     private String baseDir;
@@ -60,7 +62,9 @@ public class Params {
 
     private boolean slave = false;  //默认是master
 
-    private String slaveIp;  //默认是master
+    private String slaveIp;
+
+    private int slavePort = Constants.PORT;  //默认是master
 
     private boolean syncCompress = false;   //主从同步文件后，是否进行文件压缩，默认false
 
@@ -113,13 +117,14 @@ public class Params {
     private Params() {
         InputStream inputStream = null;
         try {
-            File file = new File("etc/params.properties");
+            String filePath = "etc" + PARAMS_PROPERTIES_PATH;
+            File file = new File(filePath);
             if (file.exists()) {
-                logger.info("load properties from etc/params.properties");
+                logger.info("load properties from " + filePath);
                 inputStream = new FileInputStream(file);
             }  else {
-                logger.info("load properties from params.properties in classpath");
-                inputStream = Params.class.getResourceAsStream("/params.properties");
+                logger.info("load properties from " + filePath + " in classpath");
+                inputStream = Params.class.getResourceAsStream(PARAMS_PROPERTIES_PATH);
             }
             Properties p = new Properties();
             p.load(inputStream);
@@ -150,7 +155,12 @@ public class Params {
             if ("true".equals(slv)) {
                 slave = true;
             } else if (!CommonUtil.isEmpty(slv) && !"false".equals(slv)) {
-                slaveIp = slv;
+                slv = slv.trim();
+                String[] ipPort =  slv.split(":");
+                slaveIp = ipPort[0];
+                if (ipPort.length == 2) {
+                    slavePort = Integer.parseInt(ipPort[1]);
+                }
             }
             String syncCompressStr = p.getProperty("syncCompress");
             if ("true".equals(syncCompressStr)) {
@@ -295,6 +305,10 @@ public class Params {
 
     public static String getSlaveIp() {
         return PARAMS.slaveIp;
+    }
+
+    public static int getSlavePort() {
+        return PARAMS.slavePort;
     }
 
     public static boolean isLoadIndex() {

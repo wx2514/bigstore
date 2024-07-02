@@ -132,7 +132,7 @@ public class CleanRunnable implements Runnable {
                         }
                         File seqFile = new File(table.getPath() + "/" + Constants.TABLE_SEQUENCE);
                         //当sequence.txt不存在时候  seqFile.lastModified() = 0, 也会出发删除表操作
-                        if (this.cleanTableNeverChangeMillis > 0 && System.currentTimeMillis() - seqFile.lastModified() > this.cleanTableNeverChangeMillis) {    //删除表
+                        if (this.cleanTableNeverChangeMillis > 0 && seqFile.lastModified() > 0 && System.currentTimeMillis() - seqFile.lastModified() > this.cleanTableNeverChangeMillis) {    //删除表
                             deleteDir(table);
                             continue;  //表都删了, 后面就不执行了
                         }
@@ -149,10 +149,10 @@ public class CleanRunnable implements Runnable {
                             };
                             File[] spaceArray = space.listFiles(fileFilter);
                             if (spaceArray.length == 0) {   //没有找到索引文件, 说明当前分区应该是损坏的,直接删除
-                                deleteDir(space);
+                                //deleteDir(space); //先不删除，防止索引不存在，误删
                             } else {
                                 for (File spaceIdxFile : spaceArray) {
-                                    if (cleanSpaceNeverChangeMillisByTable > 0 && System.currentTimeMillis() - spaceIdxFile.lastModified() > cleanSpaceNeverChangeMillisByTable) {   //删除分区
+                                    if (cleanSpaceNeverChangeMillisByTable > 0 && spaceIdxFile.lastModified() > 0 && System.currentTimeMillis() - spaceIdxFile.lastModified() > cleanSpaceNeverChangeMillisByTable) {   //删除分区
                                         String spaceName = space.getName();
                                         deleteDir(space);
                                         Integer sp = CommonUtil.parseInt2(spaceName);
