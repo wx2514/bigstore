@@ -1,5 +1,8 @@
 package com.wuqing.business.bigstore.tcp.server;
 
+import com.wuqing.business.bigstore.cache.DataCache;
+import com.wuqing.business.bigstore.cache.QueryCache;
+import com.wuqing.business.bigstore.cache.TableCache;
 import com.wuqing.business.bigstore.config.Params;
 import com.wuqing.business.bigstore.config.ServerConstants;
 import com.wuqing.business.bigstore.exception.ThrowBusinessException;
@@ -240,6 +243,37 @@ public class TcpServerHandler extends SimpleChannelInboundHandler<Object> {
                         lock.lock();
                         try {
                             FileUtil.writeByte(f, false, fileData.getFileData());
+                            String path = f.getPath();
+                            if (path.startsWith(Params.getBaseDir())) {
+                                String dataBase = null;
+                                String table = null;
+                                path = path.substring(Params.getBaseDir().length());
+                                int idx = path.indexOf("/");
+                                if (idx > -1) {
+                                    dataBase = path.substring(0, idx);
+                                    path = path.substring(idx + 1);
+                                }
+                                idx = path.indexOf("/");
+                                if (idx > -1) {
+                                    table = path.substring(0, idx);
+                                    path = path.substring(idx + 1);
+                                }
+                                idx = path.indexOf("/");
+                                if (idx == -1) {    //如果是文件了
+                                    if (Constants.TABLE_SEQUENCE.equals(path)) {
+                                        //重写之后，删除索引缓存
+                                        TableCache.removeTableCache(dataBase, table);
+                                    }
+                                    if (path.endsWith(Constants.COL_ENUM_TXT)) {
+                                        //重写之后，删除枚举索引缓存
+                                        String col = path.substring(0, path.length() - Constants.COL_ENUM_TXT.length());
+                                        TableCache.removeEnumInfo(dataBase, table, col);
+                                    }
+                                }
+                                //主从同步的时候，只会满快的时候才会同步数据和索引，只会满space的时候才会同步分区索引，索引暂时不要清理以下缓存
+                                //QueryCache.clear(dataBase, table, column, dirName); //查询查询缓存
+                                //DataCache.remove(dataBase, table, dirName, column); //删除数据块DP缓存
+                            }
                         } finally {
                             lock.unlock();
                         }

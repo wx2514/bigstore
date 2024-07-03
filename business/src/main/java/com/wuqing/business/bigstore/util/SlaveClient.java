@@ -27,13 +27,15 @@ public class SlaveClient {
 
     private static boolean existClient = false;
 
+    private static final long SYNC_TIME_OUT = 10000;    //超时默认10秒
+
     static {
         try {
             clientList = new ArrayList<BigstoreClient>();
             if (Params.getSlaveIp() != null) {
                 //开启多个通道
                 for (int i = 0; i < SIZE; i++) {
-                    clientList.add(new BigstoreClient(Params.getSlaveIp(), Params.getSlavePort(), "", 5000));
+                    clientList.add(new BigstoreClient(Params.getSlaveIp(), Params.getSlavePort(), "", SYNC_TIME_OUT));
                 }
                 existClient = true;
             }
@@ -93,13 +95,17 @@ public class SlaveClient {
     private static boolean executeSync(String file, byte[] data) {
         boolean res = false;
         for (int i = 0; i < SIZE; i++) {
-            ResponseData response = SlaveClient.getSlaveClient().syncData(file.substring(Params.getBaseDir().length()), data);
-            if (response == null  || !response.isSuccess()) {
-                logger.error("sync file to slave fail, file" + file);
-                res = false;
-            } else {
-                res = true;
-                break;  //成功了就跳出
+            try {
+                ResponseData response = SlaveClient.getSlaveClient().syncData(file.substring(Params.getBaseDir().length()), data);
+                if (response == null  || !response.isSuccess()) {
+                    logger.error("sync file to slave fail, file" + file);
+                    res = false;
+                } else {
+                    res = true;
+                    break;  //成功了就跳出
+                }
+            } catch (Exception e) {
+                logger.error("sync file to slave fail, file" + file, e);
             }
         }
         return res;

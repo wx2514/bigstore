@@ -137,6 +137,11 @@ public class TableCache extends BaseCache {
         return ENUM_MAP.put(key, enumInfo);
     }
 
+    public static EnumInfo removeEnumInfo(String dataBase, String table, String col) {
+        String key = getKey(dataBase, table, col);
+        return ENUM_MAP.remove(key);
+    }
+
     /**
      * 将索引缓存清除
      */

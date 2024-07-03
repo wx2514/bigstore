@@ -5,8 +5,14 @@ package com.wuqing.client.bigstore.config;
  */
 public class FileConfig {
 
+    /**
+     * 数据文件后缀
+     */
     public static final String DATA_FILE_SUFFIX_PRE = "_data";
 
+    /**
+     * 索引文件后缀
+     */
     public static final String DATA_INDEX_SUBFFIX = ".txt";
 
     /**
