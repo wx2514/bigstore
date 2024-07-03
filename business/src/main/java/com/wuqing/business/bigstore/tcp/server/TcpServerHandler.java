@@ -25,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -227,75 +228,23 @@ public class TcpServerHandler extends SimpleChannelInboundHandler<Object> {
             public void run() {
                 try {
                     FileData fileData = (FileData) pkg.getData();
-                    File f = new File(Params.getBaseDir() + fileData.getFilePath());
-                    File dp = f.getParentFile();
-                    if (!dp.exists()) {
-                        dp.mkdirs();
-                    }
-                    if (Params.isMergerData()) {
-                        String space = dp.getParent();
-                        final String mergerPath = space + "/" + f.getName();
-                        ReentrantLock lock = FileLockUtil.getLock(mergerPath);
-                        lock.lock();
-                        try {
-                            if (Params.isMergerData()) {
-                                File mergerFile = new File(mergerPath);
-                                int byLenth = ServerConstants.DIR_FORMAT.length() + 3;
-                                byte[] head = new byte[byLenth];
-                                int count = 0;
-                                //bufferedStream.write(ServerConstants.DIR_FLAG_START);
-                                head[count] = ServerConstants.DIR_FLAG_START;
-                                count++;
-                                //bufferedStream.write(dd.getParentFile().getName().getBytes());
-                                byte[] dirNameBytes = dp.getName().getBytes();
-                                System.arraycopy(dirNameBytes, 0, head, count, dirNameBytes.length);
-                                count += ServerConstants.DIR_FORMAT.length();
-                                //bufferedStream.write(ServerConstants.DIR_FLAG_END);
-                                head[count] = ServerConstants.DIR_FLAG_END;
-                                count++;
-                                //bufferedStream.write(ServerConstants.LINE_SEPARATOR);
-                                head[count] = ServerConstants.LINE_SEPARATOR;
-                                FileUtil.writeByte(mergerFile, true, head, fileData.getFileData());
-                                ResponseData res = new ResponseData();
-                                res.setSuccess(true);
-                                pkg.setData(res);
-                                ctx.writeAndFlush(pkg);
-                                File merger = new File(space + "/" + FileConfig.MERGER_FLAG);
-                                if (!merger.exists()) {
-                                    merger.createNewFile();
-                                }
-                                boolean isLast = dp.getName().endsWith("99");
-                                if (Params.isSyncCompress() && isLast) {
-                                    //进行数据压缩
-                                    PoolUtil.COMPRESS_FIX_POLL.execute(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            byte[] bt = GZipUtil.read2Byte(mergerPath);
-                                            bt = SnappyUtil.compress(bt);
-                                            File newFile= new File(mergerPath + ".tmp");
-                                            FileUtil.writeByte(newFile, bt);
-                                            newFile.renameTo(new File(mergerPath));
-                                        }
-                                    });
-                                }
-                            }
-
-                        } finally {
-                            lock.unlock();
-                        }
+                    if (Params.isMergerData()) {    //合并数据，当前不建议使用
+                        mergerData(fileData);
                     } else {
+                        File f = new File(Params.getBaseDir() + fileData.getFilePath());
                         ReentrantLock lock = FileLockUtil.getLock(f.getPath());
                         lock.lock();
                         try {
                             FileUtil.writeByte(f, false, fileData.getFileData());
-                            ResponseData res = new ResponseData();
-                            res.setSuccess(true);
-                            pkg.setData(res);
-                            ctx.writeAndFlush(pkg);
                         } finally {
                             lock.unlock();
                         }
                     }
+                    //返回成功
+                    ResponseData res = new ResponseData();
+                    res.setSuccess(true);
+                    pkg.setData(res);
+                    ctx.writeAndFlush(pkg);
                 } catch (Exception e) {
                     logger.error("handle message fail.", e);
                     ResponseData res = new ResponseData();
@@ -310,6 +259,59 @@ public class TcpServerHandler extends SimpleChannelInboundHandler<Object> {
                 }
             }
         });
+    }
+
+    private void mergerData(FileData fileData) throws IOException {
+        File f = new File(Params.getBaseDir() + fileData.getFilePath());
+        File dp = f.getParentFile();
+        if (!dp.exists()) {
+            dp.mkdirs();
+        }
+        String space = dp.getParent();
+        final String mergerPath = space + "/" + f.getName();
+        ReentrantLock lock = FileLockUtil.getLock(mergerPath);
+        lock.lock();
+        try {
+            File mergerFile = new File(mergerPath);
+            int byLenth = ServerConstants.DIR_FORMAT.length() + 3;
+            byte[] head = new byte[byLenth];
+            int count = 0;
+            //bufferedStream.write(ServerConstants.DIR_FLAG_START);
+            head[count] = ServerConstants.DIR_FLAG_START;
+            count++;
+            //bufferedStream.write(dd.getParentFile().getName().getBytes());
+            byte[] dirNameBytes = dp.getName().getBytes();
+            System.arraycopy(dirNameBytes, 0, head, count, dirNameBytes.length);
+            count += ServerConstants.DIR_FORMAT.length();
+            //bufferedStream.write(ServerConstants.DIR_FLAG_END);
+            head[count] = ServerConstants.DIR_FLAG_END;
+            count++;
+            //bufferedStream.write(ServerConstants.LINE_SEPARATOR);
+            head[count] = ServerConstants.LINE_SEPARATOR;
+            FileUtil.writeByte(mergerFile, true, head, fileData.getFileData());
+
+            File merger = new File(space + "/" + FileConfig.MERGER_FLAG);
+            if (!merger.exists()) {
+                merger.createNewFile();
+            }
+            boolean isLast = dp.getName().endsWith("99");
+            if (Params.isSyncCompress() && isLast) {
+                //进行数据压缩
+                PoolUtil.COMPRESS_FIX_POLL.execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        byte[] bt = GZipUtil.read2Byte(mergerPath);
+                        bt = SnappyUtil.compress(bt);
+                        File newFile= new File(mergerPath + ".tmp");
+                        FileUtil.writeByte(newFile, bt);
+                        newFile.renameTo(new File(mergerPath));
+                    }
+                });
+            }
+
+        } finally {
+            lock.unlock();
+        }
     }
 
     private DataResult queryGroup(final Condition condition) throws Exception {

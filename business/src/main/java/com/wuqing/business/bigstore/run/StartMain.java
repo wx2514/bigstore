@@ -15,6 +15,7 @@ public class StartMain {
     public static TcpServer server = null;
 
     public static void main(String[] args) throws Exception {
+        Params.load(null);
         server = new TcpServer(Params.getPort());
         server.startServer();
         CompressRunnable.start();

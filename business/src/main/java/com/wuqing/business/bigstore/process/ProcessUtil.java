@@ -151,11 +151,9 @@ public class ProcessUtil {
             //String res = executeDelDataFile("/tmp/bigstore/default_data_base/test_table/rows/0000000009/0000000900");
             long s = System.currentTimeMillis();
             //String result = executeSync("/tmp/bigstore/default_data_base/test_table/rows/0000000002/0000000293", "10.17.32.162");
-            String result = executeScpSync("/tmp/bigstore/default_data_base/test_table/rows/0000000002/0000000293", "10.17.32.162", true);
+            //String result = executeScpSync("/tmp/bigstore/default_data_base/test_table/rows/0000000002/0000000293", "10.17.32.162", true);
             long time = System.currentTimeMillis() - s;
-            if (time > 100) {
-                System.out.println(i + ":" + result + ":" + time);
-            }
+
         }
         /*ProcessResult resList = execute("ls ~*//*");
         System.out.println(resList.getResList());*/

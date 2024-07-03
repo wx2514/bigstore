@@ -9,6 +9,7 @@ import com.wuqing.business.bigstore.manager.StoreManager;
 import com.wuqing.business.bigstore.util.CacheUtil;
 import com.wuqing.business.bigstore.util.DataBaseUtil;
 import com.wuqing.business.bigstore.util.FileUtil;
+import com.wuqing.business.bigstore.util.SlaveClient;
 import com.wuqing.client.bigstore.bean.ColumnDef;
 import com.wuqing.client.bigstore.bean.Condition;
 import com.wuqing.client.bigstore.bean.DataResult;
@@ -109,6 +110,11 @@ public class BigstoreService {
         FileUtil.writeFile(tableSeq, CommonUtil.asList("0"), false);
         String rows = tablePath + "/rows/";
         new File(rows).mkdirs();
+        if (SlaveClient.haveSlave()) {
+            SlaveClient.syncFile(tableDirDesc);
+            SlaveClient.syncFile(tableSeq);
+        }
+
     }
 
     public static void addTableColumn(String dataBase, String table, List<ColumnDef> colList) throws Exception {

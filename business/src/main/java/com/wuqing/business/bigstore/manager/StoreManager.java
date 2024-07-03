@@ -230,6 +230,8 @@ public class StoreManager {
             if (tableInfo != null) {
                 tableInfo.setNextId(nextId);
             }
+            //主从同步
+            SlaveClient.syncFile(tableSeq);
             //清理查询缓存
             int oldDirIndex = (int) (oldNextId / ServerConstants.PARK_SIZ);
             int nextDirIndex = (int) (nextId / ServerConstants.PARK_SIZ);
@@ -240,7 +242,7 @@ public class StoreManager {
             }
             //storeTimeLogger.debug("[" + table + "] write data by lock:" + (System.currentTimeMillis() - s));
             //如果有主从同步，则直接进行主从同步，
-            if (Params.getSlaveIp() != null && Params.getCompressDelayHour() > 0) {
+            /*if (Params.getSlaveIp() != null && Params.getCompressDelayHour() > 0) {
                 PoolUtil.SEND_FIX_POLL.execute(new Runnable() {
                     @Override
                     public void run() {
@@ -270,7 +272,7 @@ public class StoreManager {
                     }
                 });
 
-            }
+            }*/
         } finally {
             lock.unlock();
         }
@@ -423,21 +425,15 @@ public class StoreManager {
                 //删除数据块DP缓存
                 DataCache.remove(dataBase, table, dirName, column);
 
-                if (SlaveClient.getSlaveClient() != null && size == ServerConstants.PARK_SIZ) { //如果是满块的做数据同步
+                if (SlaveClient.haveSlave() && size == ServerConstants.PARK_SIZ) { //如果是满块的做数据同步
                     if (bytes == null) {
                         bytes = GZipUtil.readTxt2Byte(data);
                     }
-                    byte[] descData = GZipUtil.readTxt2Byte(desc);
-                    //long ss = System.currentTimeMillis();
-                    ResponseData response = SlaveClient.getSlaveClient().syncData(data.substring(Params.getBaseDir().length()), bytes);
-                    if (response == null  || !response.isSuccess()) {
-                        res = false;
+                    SlaveClient.syncFile(data, bytes);
+                    SlaveClient.syncFile(desc);
+                    if (new File(bloonDesc).exists()) {
+                        SlaveClient.syncFile(bloonDesc);
                     }
-                    response = SlaveClient.getSlaveClient().syncData(desc.substring(Params.getBaseDir().length()), descData);
-                    if (response == null  || !response.isSuccess()) {
-                        res = false;
-                    }
-                    //storeTimeLogger.debug("sync-send-file:" + (System.currentTimeMillis() - ss));
                 }
 
                 //字符串的分区索引构建
@@ -460,8 +456,11 @@ public class StoreManager {
                         }
                         byte[] bt = KryoUtil.writeToByteArray(bloomFilter);
                         FileUtil.writeByte(spaceDesc, bt);
+                        //主从同步
+                        if (SlaveClient.haveSlave()) {
+                            SlaveClient.syncFile(spaceDesc, bt);
+                        }
                     }
-
                 }
 
                 lines.clear();
@@ -584,6 +583,7 @@ public class StoreManager {
                 }
                 FileUtil.writeFile(desc, datas, false);
                 TableCache.removeIndexCache(dataBase, table, dirName, column);   //重写之后，删除索引缓存
+                String spacePath = null;
                 if (CommonManager.isOrderColumn(dataBase, table, column)) {   //如果是顺序列，则建立表分区索引
                     SpaceInfo spaceInfo = CacheUtil.getSpaceInfo(dataBase, table, dirSpaceIndex, column);
                     if (spaceInfo != null) {
@@ -592,7 +592,7 @@ public class StoreManager {
                     }
                     //输出表分区数据到硬盘
                     String spaceKey = DataBaseUtil.getTablePath(dataBase, table) + "/rows/" + df.format(dirSpaceIndex) + "/" + column;
-                    String spacePath = spaceKey + FileConfig.SPACE_FILE_SUFFIX;;
+                    spacePath = spaceKey + FileConfig.SPACE_FILE_SUFFIX;;
                     List<String> spaceData = CommonUtil.asList(String.valueOf(min), String.valueOf(max));
                     //如果是表分区的最后一个DP的最后一条数据已写满，则更新表分区索引
                     if (size == ServerConstants.PARK_SIZ && dirName.endsWith(String.valueOf(Constants.SPACE_SIZ - 1))) {
@@ -621,21 +621,18 @@ public class StoreManager {
                 //删除数据块DP缓存
                 DataCache.remove(dataBase, table, dirName, column);
 
-                if (SlaveClient.getSlaveClient() != null && size == ServerConstants.PARK_SIZ) { //如果是满块的做数据同步
+                if (SlaveClient.haveSlave() && size == ServerConstants.PARK_SIZ) { //如果是满块的做数据同步
                     if (bytes == null) {
                         bytes = GZipUtil.readTxt2Byte(data);
                     }
-                    byte[] descData = GZipUtil.readTxt2Byte(desc);
-                    //long ss = System.currentTimeMillis();
-                    ResponseData response = SlaveClient.getSlaveClient().syncData(data.substring(Params.getBaseDir().length()), bytes);
-                    if (response == null  || !response.isSuccess()) {
-                        res = false;
-                    }
-                    response = SlaveClient.getSlaveClient().syncData(desc.substring(Params.getBaseDir().length()), descData);
-                    if (response == null  || !response.isSuccess()) {
-                        res = false;
-                    }
-                    //storeTimeLogger.debug("sync-send-file:" + (System.currentTimeMillis() - ss));
+                    SlaveClient.syncFile(data, bytes);
+                    SlaveClient.syncFile(desc);
+                }
+
+                //数值的分区索引同步
+                if (SlaveClient.haveSlave() && spacePath != null && size == ServerConstants.PARK_SIZ
+                        && dirName.endsWith(String.valueOf(Constants.SPACE_SIZ - 1))) {
+                    SlaveClient.syncFile(spacePath);
                 }
 
                 //数据重置
@@ -946,6 +943,7 @@ public class StoreManager {
             l = enumInfo.addEnum(data);
             String colEnumPath = DataBaseUtil.getTablePath(dataBase, table) + "/" + col + Constants.COL_ENUM_TXT;
             FileUtil.writeFile(colEnumPath, enumInfo.toTextLines(), false);
+            SlaveClient.syncFile(colEnumPath);
         }
         return l;
     }

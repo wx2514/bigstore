@@ -1,6 +1,7 @@
 package com.wuqing.business.bigstore.run;
 
 import com.wuqing.business.bigstore.cache.DataCache;
+import com.wuqing.business.bigstore.config.Params;
 import com.wuqing.business.bigstore.service.BigstoreService;
 import com.wuqing.business.bigstore.thread.CleanRunnable;
 import com.wuqing.business.bigstore.thread.CompressRunnable;
@@ -27,6 +28,7 @@ public class TestMain {
 
     public static void main(String[] args) throws Exception {
         long start = System.currentTimeMillis();
+        Params.load(null);
         CompressRunnable.start();
         CleanRunnable.start();
         DataCache.directCheck();

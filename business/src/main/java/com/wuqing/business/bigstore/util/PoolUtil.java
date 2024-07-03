@@ -16,7 +16,7 @@ public class PoolUtil {
 
     public static final ExecutorService NETTY_FIX_POLL = newFixedThreadPool(Params.getNettyThreadSize(), "bigstore-netty-server");
 
-    public static final ExecutorService NETTY_SYNC_FILE_FIX_POLL = newFixedThreadPool(5, "bigstore-netty-sync-file");
+    public static final ExecutorService NETTY_SYNC_FILE_FIX_POLL = newFixedThreadPool(10, "bigstore-netty-sync-file");
 
     public static final ExecutorService QUERY_FIX_POLL_QUERY = newFixedThreadPool(Params.getQueryThreadSize(), "bigstore-query-query");
 

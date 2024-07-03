@@ -22,7 +22,7 @@ public class Params {
 
     public static String PARAMS_PROPERTIES_PATH = "/params.properties";
 
-    private static final Params PARAMS = new Params();
+    private static Params PARAMS = null;
 
     private String baseDir;
 
@@ -113,6 +113,13 @@ public class Params {
     private int forceFlushLineCount = 100000;   //默认10万条强制flush store
 
     private Set<String> queryCacheColumnsSet = new HashSet<>();
+
+    public static void load(String paramsFile) {
+        if (paramsFile != null) {
+            PARAMS_PROPERTIES_PATH = paramsFile;
+        }
+        PARAMS = new Params();
+    }
 
     private Params() {
         InputStream inputStream = null;

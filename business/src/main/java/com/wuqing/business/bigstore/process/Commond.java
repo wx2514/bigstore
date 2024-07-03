@@ -19,7 +19,7 @@ public class Commond {
 
     private static String SCP_0 = "ssh -p10022 ${ip} 'mkdir -p ${dp}'";
     private static String SCP_1 = "scp -P10022 ${dp}/*.*t ${ip}:${dp}/";
-    private static String SCP_2 = "scp -P10022 ${ds}/*_space.txt ${ip}:${ds}/";
+    private static String SCP_2 = "scp -P10022 ${ds}/*_space.*t ${ip}:${ds}/";
     private static String SCP_3 = "scp -P10022 ${tb}/*.txt ${ip}:${tb}/";
 
     public static List<String> getSyncScpCommond(String dp, String ip, boolean syncDpData) {
