@@ -232,6 +232,10 @@ public class TcpServerHandler extends SimpleChannelInboundHandler<Object> {
                         mergerData(fileData);
                     } else {
                         File f = new File(Params.getBaseDir() + fileData.getFilePath());
+                        File dp = f.getParentFile();
+                        if (!dp.exists()) {
+                            dp.mkdirs();
+                        }
                         ReentrantLock lock = FileLockUtil.getLock(f.getPath());
                         lock.lock();
                         try {

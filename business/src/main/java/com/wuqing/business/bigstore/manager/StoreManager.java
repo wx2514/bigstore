@@ -434,6 +434,15 @@ public class StoreManager {
                     if (new File(bloonDesc).exists()) {
                         SlaveClient.syncFile(bloonDesc);
                     }
+                    if (columnDef.isReverseIndex()) {   //倒排索引同步
+                        for (int idx = 0; idx < ServerConstants.GROUP_SIZE; idx++) {
+                            String file = key + FileConfig.SPLIT_WORD_SUFFIX.replace(FileConfig.SPLIT_WORD_IDX, String.valueOf(idx));
+                            if (new File(file).exists()) {
+                                SlaveClient.syncFile(file);
+                            }
+                        }
+
+                    }
                 }
 
                 //字符串的分区索引构建
