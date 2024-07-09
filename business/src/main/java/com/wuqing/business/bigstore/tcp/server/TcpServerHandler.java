@@ -231,7 +231,7 @@ public class TcpServerHandler extends SimpleChannelInboundHandler<Object> {
             public void run() {
                 try {
                     FileData fileData = (FileData) pkg.getData();
-                    if (Params.isMergerData()) {    //合并数据，当前不建议使用
+                    if (Params.isMergerData()) {    //合并数据，当前不建议使用。未经严格测试
                         mergerData(fileData);
                     } else {
                         File f = new File(Params.getBaseDir() + fileData.getFilePath());
@@ -247,6 +247,7 @@ public class TcpServerHandler extends SimpleChannelInboundHandler<Object> {
                             if (path.startsWith(Params.getBaseDir())) {
                                 String dataBase = null;
                                 String table = null;
+                                String dir = null;
                                 path = path.substring(Params.getBaseDir().length());
                                 int idx = path.indexOf("/");
                                 if (idx > -1) {
@@ -256,6 +257,21 @@ public class TcpServerHandler extends SimpleChannelInboundHandler<Object> {
                                 idx = path.indexOf("/");
                                 if (idx > -1) {
                                     table = path.substring(0, idx);
+                                    path = path.substring(idx + 1);
+                                }
+                                idx = path.indexOf("/");
+                                if (idx > -1) {
+                                    String rows = path.substring(0, idx);
+                                    path = path.substring(idx + 1);
+                                }
+                                idx = path.indexOf("/");
+                                if (idx > -1) {
+                                    String space = path.substring(0, idx);
+                                    path = path.substring(idx + 1);
+                                }
+                                idx = path.indexOf("/");
+                                if (idx > -1) {
+                                    dir = path.substring(0, idx);
                                     path = path.substring(idx + 1);
                                 }
                                 idx = path.indexOf("/");
@@ -269,10 +285,13 @@ public class TcpServerHandler extends SimpleChannelInboundHandler<Object> {
                                         String col = path.substring(0, path.length() - Constants.COL_ENUM_TXT.length());
                                         TableCache.removeEnumInfo(dataBase, table, col);
                                     }
+                                    if (dir != null && path.endsWith(FileConfig.DATA_FILE_SUFFIX)) {
+                                        String col = path.substring(0, path.length() - FileConfig.DATA_FILE_SUFFIX.length());
+                                        QueryCache.clear(dataBase, table, col, dir);//查询查询缓存
+                                        DataCache.remove(dataBase, table, dir, col);//删除数据块DP缓存
+                                    }
                                 }
                                 //主从同步的时候，只会满快的时候才会同步数据和索引，只会满space的时候才会同步分区索引，索引暂时不要清理以下缓存
-                                //QueryCache.clear(dataBase, table, column, dirName); //查询查询缓存
-                                //DataCache.remove(dataBase, table, dirName, column); //删除数据块DP缓存
                             }
                         } finally {
                             lock.unlock();
