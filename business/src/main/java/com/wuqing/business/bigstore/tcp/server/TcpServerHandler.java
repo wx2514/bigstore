@@ -247,6 +247,7 @@ public class TcpServerHandler extends SimpleChannelInboundHandler<Object> {
                             if (path.startsWith(Params.getBaseDir())) {
                                 String dataBase = null;
                                 String table = null;
+                                String space = null;
                                 String dir = null;
                                 path = path.substring(Params.getBaseDir().length());
                                 int idx = path.indexOf("/");
@@ -266,7 +267,7 @@ public class TcpServerHandler extends SimpleChannelInboundHandler<Object> {
                                 }
                                 idx = path.indexOf("/");
                                 if (idx > -1) {
-                                    String space = path.substring(0, idx);
+                                    space = path.substring(0, idx);
                                     path = path.substring(idx + 1);
                                 }
                                 idx = path.indexOf("/");
@@ -277,21 +278,22 @@ public class TcpServerHandler extends SimpleChannelInboundHandler<Object> {
                                 idx = path.indexOf("/");
                                 if (idx == -1) {    //如果是文件了
                                     if (Constants.TABLE_SEQUENCE.equals(path)) {
-                                        //重写之后，删除索引缓存
                                         TableCache.removeTableCache(dataBase, table);
-                                    }
-                                    if (path.endsWith(Constants.COL_ENUM_TXT)) {
-                                        //重写之后，删除枚举索引缓存
+                                    } else if (path.endsWith(Constants.COL_ENUM_TXT)) {
                                         String col = path.substring(0, path.length() - Constants.COL_ENUM_TXT.length());
                                         TableCache.removeEnumInfo(dataBase, table, col);
-                                    }
-                                    if (dir != null && path.endsWith(FileConfig.DATA_FILE_SUFFIX)) {
+                                    } else if (dir != null && path.endsWith(FileConfig.DATA_FILE_SUFFIX)) {
                                         String col = path.substring(0, path.length() - FileConfig.DATA_FILE_SUFFIX.length());
                                         QueryCache.clear(dataBase, table, col, dir);//查询查询缓存
                                         DataCache.remove(dataBase, table, dir, col);//删除数据块DP缓存
+                                    } else if (dir != null && path.endsWith(FileConfig.DESC_FILE_SUFFIX)) {
+                                        String col = path.substring(0, path.length() - FileConfig.DESC_FILE_SUFFIX.length());
+                                        TableCache.removeIndexCache(dataBase, table, dir, col);
+                                    } else if (space != null && path.endsWith(FileConfig.SPACE_FILE_SUFFIX)) {
+                                        String col = path.substring(0, path.length() - FileConfig.SPACE_FILE_SUFFIX.length());
+                                        TableCache.removeSpaceCache(dataBase, table, space, col);
                                     }
                                 }
-                                //主从同步的时候，只会满快的时候才会同步数据和索引，只会满space的时候才会同步分区索引，索引暂时不要清理以下缓存
                             }
                         } finally {
                             lock.unlock();
